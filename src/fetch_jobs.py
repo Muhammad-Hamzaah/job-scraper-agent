@@ -1,5 +1,6 @@
 import requests
 import logging
+from datetime import datetime
 
 logging.basicConfig(level=logging.INFO)
 
@@ -53,6 +54,13 @@ def fetch_jobs(keyword="", location=""):
         return []
 
 
+def format_posted_date(timestamp):
+    """Converts an Arbeitnow timestamp into a readable date, or 'Unknown' if missing."""
+    if not timestamp:
+        return "Unknown"
+    return datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d")
+
+
 if __name__ == "__main__":
     keyword = input("What job are you looking for? (e.g. python, marketing): ")
     location = input("Which location? (e.g. remote, Berlin, or leave blank): ")
@@ -66,4 +74,5 @@ if __name__ == "__main__":
             print("Title:", job.get("title"))
             print("Company:", job.get("company_name"))
             print("Location:", job.get("location"))
+            print("Posted at:", format_posted_date(job.get("created_at")))
             print("Apply:", job.get("url"))
