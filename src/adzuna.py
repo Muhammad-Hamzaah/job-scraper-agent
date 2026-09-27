@@ -37,6 +37,13 @@ def fetch_adzuna_jobs(keyword="", country="us"):
         return []
 
 
+def format_posted_date(raw_date):
+    """Converts an Adzuna date string (e.g. '2026-09-20T14:23:00Z') into just the date, or 'Unknown' if missing."""
+    if not raw_date:
+        return "Unknown"
+    return raw_date.split("T")[0]
+
+
 if __name__ == "__main__":
     keyword = input("What job are you looking for? (e.g. python, marketing): ")
     jobs = fetch_adzuna_jobs(keyword)
@@ -49,4 +56,5 @@ if __name__ == "__main__":
             print("Title:", job.get("title"))
             print("Company:", job.get("company", {}).get("display_name"))
             print("Location:", job.get("location", {}).get("display_name"))
+            print("Posted at:", format_posted_date(job.get("created")))
             print("Apply:", job.get("redirect_url"))
