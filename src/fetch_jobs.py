@@ -6,16 +6,25 @@ logging.basicConfig(level=logging.INFO)
 ARBEITNOW_URL = "https://www.arbeitnow.com/api/job-board-api"
 
 
-def fetch_jobs(keyword=""):
-    """Fetches jobs from the Arbeitnow API, requiring ALL keyword words to match."""
+def fetch_jobs(keyword="", location=""):
+    """Fetches jobs from the Arbeitnow API, filtered by keyword and (optionally) location."""
     try:
         response = requests.get(ARBEITNOW_URL, timeout=10)
         response.raise_for_status()
         data = response.json()
         all_jobs = data.get("data", [])
 
+        # Step 1: filter by location first (if provided)
+        if location:
+            location_lower = location.lower()
+            all_jobs = [
+                job for job in all_jobs
+                if location_lower in job.get("location", "").lower()
+                or (location_lower == "remote" and job.get("remote") is True)
+            ]
+
         if not keyword:
-            logging.info(f"Fetched {len(all_jobs)} total jobs")
+            logging.info(f"Fetched {len(all_jobs)} jobs after location filter")
             return all_jobs
 
         keyword_words = keyword.lower().split()
@@ -29,17 +38,14 @@ def fetch_jobs(keyword=""):
                 job.get("description", "")
             ]).lower()
 
-            # Require every keyword word to appear somewhere in the job
             if all(word in full_text for word in keyword_words):
-                # Give a higher score if the words appear in the title (more relevant)
                 title_score = sum(1 for word in keyword_words if word in title_text)
                 matched_jobs.append((title_score, job))
 
-        # Jobs with keyword words in the title rank higher
         matched_jobs.sort(key=lambda x: x[0], reverse=True)
         filtered_jobs = [job for _, job in matched_jobs]
 
-        logging.info(f"Found {len(filtered_jobs)} jobs relevant to '{keyword}'")
+        logging.info(f"Found {len(filtered_jobs)} jobs relevant to '{keyword}'" + (f" in '{location}'" if location else ""))
         return filtered_jobs
 
     except requests.RequestException as e:
@@ -49,10 +55,11 @@ def fetch_jobs(keyword=""):
 
 if __name__ == "__main__":
     keyword = input("What job are you looking for? (e.g. python, marketing): ")
-    jobs = fetch_jobs(keyword)
+    location = input("Which location? (e.g. remote, Berlin, or leave blank): ")
+    jobs = fetch_jobs(keyword, location)
 
     if not jobs:
-        print("No jobs found for this keyword.")
+        print("No jobs found for this keyword/location.")
     else:
         for job in jobs[:5]:
             print("\n---")
